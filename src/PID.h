@@ -13,9 +13,21 @@ public:
   /*
   * Coefficients
   */ 
-  double Kp;
-  double Ki;
-  double Kd;
+  double kp;
+  double ki;
+  double kd;
+
+  double v_;
+  double kp0;
+  double ki0;
+  double kd0;
+
+  double a_p;
+  double a_i;
+  double a_d;
+  double frac;
+
+  double cte, cte_prev, cte_mem;
 
   /*
   * Constructor
@@ -30,7 +42,7 @@ public:
   /*
   * Initialize PID.
   */
-  void Init(double Kp, double Ki, double Kd);
+  void Init(double kp0, double ki0, double kd0, double a_p, double a_d, double a_i, double v, double frac);
 
   /*
   * Update the PID error variables given cross track error.
@@ -41,6 +53,9 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+
+  void UpdateCoefficients(double kp0, double ki0, double kd0, double a_p, double a_i, double a_d, double v);
+
 };
 
 #endif /* PID_H */

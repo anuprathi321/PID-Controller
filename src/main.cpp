@@ -3,6 +3,7 @@
 #include "json.hpp"
 #include "PID.h"
 #include <math.h>
+#include <iostream>
 
 // for convenience
 using json = nlohmann::json;
@@ -33,7 +34,8 @@ int main()
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
+
+  pid.Init(0.12, 0.00, 3.5, 0.000, 0.00025, 0.000, 0, 0.95);
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -41,7 +43,7 @@ int main()
     // The 2 signifies a websocket event
     if (length && length > 2 && data[0] == '4' && data[1] == '2')
     {
-      auto s = hasData(std::string(data).substr(0, length));
+      auto s = hasData(std::string(data));
       if (s != "") {
         auto j = json::parse(s);
         std::string event = j[0].get<std::string>();
@@ -58,12 +60,49 @@ int main()
           * another PID controller to control the speed!
           */
           
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+            // Update coefficients according to current speed
+          pid.UpdateCoefficients(pid.kp0, pid.ki0, pid.kd0, pid.a_p, pid.a_i,pid.a_d, speed);
+          pid.UpdateError(cte);
+
+          static double throttle = 1;
+          static int brake_iters = 0;
+          static bool brake = false;
+
+          if( (fabs(pid.cte-pid.cte_prev) > 0.12)  && brake_iters == 0) {
+            brake_iters = 5;            
+            brake = true;
+          }
+
+          // Steering Control
+          static double steering_prev = 0;
+          steer_value = - pid.TotalError();
+          steer_value = 0.7 * steering_prev + 0.3* steer_value;
+
+          // Throttle control. Brake in emergencies, otherwise go as fast as possible.
+          const double target_speed = 10;
+
+          if(!brake){
+            if (speed < target_speed){
+              throttle +=0.1;
+              if (throttle > 1) throttle = 1;
+            } 
+            else if (speed > target_speed) {
+              throttle = 0.5;
+            }
+          } 
+          else {
+            throttle = -0.0;          
+            brake_iters--;
+            if (brake_iters == 0 ) {
+              brake = false;
+              throttle = 1;
+            }
+            std::cout << brake_iters << std::endl;
+          }
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = throttle;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
