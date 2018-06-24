@@ -61,7 +61,7 @@ int main()
           */
           
             // Update coefficients according to current speed
-          pid.UpdateCoefficients(pid.kp0, pid.ki0, pid.kd0, pid.a_p, pid.a_i,pid.a_d, speed);
+          //pid.UpdateCoefficients(pid.kp0, pid.ki0, pid.kd0, pid.a_p, pid.a_i,pid.a_d, speed);
           pid.UpdateError(cte);
 
           static double throttle = 1;
@@ -76,7 +76,7 @@ int main()
           // Steering Control
           static double steering_prev = 0;
           steer_value = - pid.TotalError();
-          steer_value = 0.7 * steering_prev + 0.3* steer_value;
+          //steer_value = 0.7 * steering_prev + 0.3* steer_value;
 
           // Throttle control. Brake in emergencies, otherwise go as fast as possible.
           const double target_speed = 10;
